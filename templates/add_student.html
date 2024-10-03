@@ -10,3 +10,39 @@
     {{ form.submit() }}
 </form>
 {% endblock %}
+
+<form id="studentForm">
+    <div class="form-group">
+        <label for="firstname">First Name</label>
+        <input type="text" class="form-control" id="firstname" name="firstname" required>
+    </div>
+    <div class="form-group">
+        <label for="lastname">Last Name</label>
+        <input type="text" class="form-control" id="lastname" name="lastname" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Student</button>
+</form>
+<div id="responseMessage"></div>
+
+<script>
+    $(document).ready(function(){
+        $("#studentForm").on("submit", function(event){
+            event.preventDefault();  // Prevent the default form submission
+
+            $.ajax({
+                url: "{{ url_for('add_student') }}",  // Flask route to handle form submission
+                type: "POST",                          // HTTP method
+                data: $(this).serialize(),             // Serialize form data
+                success: function(response){
+                    // Handle success
+                    $("#responseMessage").html("<div class='alert alert-success'>Student added successfully!</div>");
+                    $("#studentForm")[0].reset();  // Reset the form
+                },
+                error: function(){
+                    // Handle error
+                    $("#responseMessage").html("<div class='alert alert-danger'>Error adding student.</div>");
+                }
+            });
+        });
+    });
+</script>
