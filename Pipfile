@@ -7,6 +7,10 @@ name = "pypi"
 flask = "*"
 flask-wtf = "*"
 wtforms = "*"
+flask-mysql = "*"
+flask-mysqldb = "*"
+flask-bootstrap = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
