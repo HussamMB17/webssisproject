@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, url_for
-from webssisproject.forms import StudentForm
+from forms import StudentForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mysecretkey'
