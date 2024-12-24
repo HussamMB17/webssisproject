@@ -6,11 +6,15 @@ name = "pypi"
 [packages]
 flask = "*"
 flask-wtf = "*"
-wtforms = "*"
 flask-mysql = "*"
 flask-mysqldb = "*"
-flask-bootstrap = "*"
+pymysql = "*"
 python-dotenv = "*"
+mysqlclient = "*"
+wtforms = "*"
+cloudinary = "*"
+google-auth = "*"
+google-auth-oauthlib = "*"
 
 [dev-packages]
 

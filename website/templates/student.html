@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+<h1>Student Management</h1>
+
+<!-- Display Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flashes">
+            {% for category, message in messages %}
+                <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<button id="addStudentButton" onclick="toggleForm()">Add Student</button>
+
+<!-- Add Student Modal -->
+<div id="formModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close" onclick="toggleForm()">X</span>
+        <form id="student-form" action="/add_student" method="post" enctype="multipart/form-data">
+            <label for="idNumber">ID Number:</label><br>
+            <input type="text" id="idNumber" name="idNumber" required><br>
+            <label for="firstName">First Name:</label><br>
+            <input type="text" id="firstName" name="firstName" required><br>
+            <label for="lastName">Last Name:</label><br>
+            <input type="text" id="lastName" name="lastName" required><br>
+            <label for="courseCode">Select Course:</label><br>
+            <select id="courseCode" name="courseCode" required>
+                <option value="" disabled selected>Select a course</option>
+                {% for program in programs %}
+                <option value="{{ program['programCode'] }}">{{ program['programCode'] }} - {{ program['programTitle'] }}</option>
+                {% endfor %}
+                {% if not programs %}
+                <option value="" disabled>No programs available</option>
+                {% endif %}
+            </select><br>
+            
+            <label for="year">Year Level:</label>
+            <select id="year" name="year" required>
+                <option value="" disabled selected>Select your Year Level</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+                <option value="5th Year">5th Year</option>
+                <option value="6th Year">6th Year</option>
+            </select><br>
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="" disabled selected>Select your gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select><br>
+            <label for="file">Select image:</label>
+            <input type="file" name="file" id="file" accept="image/*" ><br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+
+<!-- Edit Student Modal -->
+<div id="editModal" class="modal hidden">
+    <div class="modal-content">
+        <span class="close" onclick="toggleEditForm()">&times;</span>
+        <form id="edit-student-form" action="" method="post" onsubmit="return confirmUpdate();">
+            <label for="editIdNumber">Id Number:</label><br>
+            <input type="text" id="editIdNumber" name="idNumber">
+            <label for="editFirstName">First Name:</label><br>
+            <input type="text" id="editFirstName" name="firstName" required><br>
+            <label for="editLastName">Last Name:</label><br>
+            <input type="text" id="editLastName" name="lastName" required><br>
+
+            <label for="editCourseInput">Select Course:</label><br>
+            <input list="editCourseOptions" id="editCourseInput" name="courseCode" required placeholder="Select or type a course">
+            <datalist id="editCourseOptions">
+                <option value="">Select a course</option>
+                {% for program in programs %}
+                <option value="{{ program['programCode'] }}">{{ program['programCode'] }} - {{ program['programTitle'] }}</option>
+                {% endfor %}
+                {% if not programs %}
+                <option value="">No programs available</option>
+                {% endif %}
+            </datalist><br>
+
+
+            <label for="editYear">Year Level:</label>
+            <select id="editYear" name="year" required>
+                <option value="" disabled>Select your Year Level</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+                <option value="5th Year">5th Year</option>
+                <option value="6th Year">6th Year</option>
+            </select><br>
+            <label for="editGender">Gender:</label>
+            <select id="editGender" name="gender" required>
+                <option value="" disabled selected>Select your gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select><br>
+            <br>
+            <button type="submit">Update</button>
+        </form>
+    </div>
+</div>
+
+<!-- Search Form -->
+<form action="/search_student" method="get">
+    <label for="searchField">Search By:</label>
+    <select id="searchField" name="searchField" required>
+        <option value="idNumber">Student ID</option>
+        <option value="firstName">First Name</option>
+        <option value="lastName">Last Name</option>
+        <option value="course">Course</option>
+        <option value="yearLevel">Year Level</option>
+        <option value="gender">Gender</option>
+        <option value="status">Status</option>
+    </select>
+
+    <label for="searchValue">Search Value:</label>
+    <input type="text" id="searchValue" name="searchValue" placeholder="Enter search value" required>
+
+    <button type="submit">Search</button>
+</form>
+
+<!-- Student Table -->
+<table border="1" cellpadding="10">
+    <thead>
+        <tr>
+            <th>ID Number</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Program</th>
+            <th>Year</th>
+            <th>Gender</th>
+            <th>Status</th>
+            <th>Photo</th> <!-- New column for the photo -->
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if search_result %}
+        <tr>
+            <td>{{ search_result.IDNumber }}</td>
+            <td>{{ search_result.firstName }}</td>
+            <td>{{ search_result.lastName }}</td>
+            <td>{{ search_result.CourseCode }}</td>
+            <td>{{ search_result.Year }}</td>
+            <td>{{ search_result.Gender }}</td>
+            <td>{{ search_result.Status }}</td>
+            <td><img src="{{ search_result.imageURL }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
+            <td>
+                <button onclick="openEditForm('{{ search_result.IDNumber }}', '{{ search_result.firstName }}', '{{ search_result.lastName }}', '{{ search_result.CourseCode }}', '{{ search_result.Year }}', '{{ search_result.Gender }}')">Edit</button>
+                <form action="/delete_student/{{ search_result.IDNumber }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <!-- Show all students when there's no search result -->
+        {% for student in students %}
+        <tr>
+            <td>{{ student['IDNumber'] }}</td>
+            <td>{{ student['firstName'] }}</td>
+            <td>{{ student['lastName'] }}</td>
+            <td>{{ student['CourseCode'] }}</td>
+            <td>{{ student['Year'] }}</td>
+            <td>{{ student['Gender'] }}</td>
+            <td>{{ student['Status'] }}</td>
+            <td><img src="{{ student['imageURL'] }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
+            <td>
+                <button onclick="openEditForm('{{ student['IDNumber'] }}', '{{ student['firstName'] }}', '{{ student['lastName'] }}', '{{ student['CourseCode'] }}', '{{ student['Year'] }}', '{{ student['Gender'] }}')">Edit</button>
+                <form action="/delete_student/{{ student['IDNumber'] }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+
+<script>
+    function toggleForm() {
+        var modal = document.getElementById("formModal");
+        closeOtherModals(modal);
+        modal.classList.toggle("hidden");
+        modal.classList.toggle("show");
+    }
+
+    function toggleEditForm() {
+        var modal = document.getElementById("editModal");
+        closeOtherModals(modal);
+        modal.classList.toggle("hidden");
+        modal.classList.toggle("show");
+    }
+
+    function closeOtherModals(activeModal) {
+        var modals = [document.getElementById("formModal"), document.getElementById("editModal")];
+        modals.forEach(modal => {
+            if (modal !== activeModal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("show");
+            }
+        });
+    }
+
+    function openEditForm(idNumber, firstName, lastName, courseCode, year, gender) {
+        document.getElementById("editIdNumber").value = idNumber;
+        document.getElementById("editFirstName").value = firstName;
+        document.getElementById("editLastName").value = lastName;
+        document.getElementById("editCourseInput").value = courseCode;
+        document.getElementById("editYear").value = year;
+        document.getElementById("editGender").value = gender;
+
+        // Dynamically update the form action to include the correct idNumber
+        document.getElementById("edit-student-form").action = `/edit_student/${idNumber}`;
+
+        toggleEditForm();  // Show the edit form
+    }
+
+    function confirmDelete() {
+        return confirm("Are you sure you want to delete this student?");
+    }
+
+    function confirmUpdate() {
+        return confirm("Are you sure you want to update this student?");
+    }
+</script>
+
+{% endblock %}

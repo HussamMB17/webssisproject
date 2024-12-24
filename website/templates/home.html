@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<!-- Landing Page Content -->
+<section class="landing-section">
+    <h1>Simple Web Student Information System</h1>
+    <a href="/students" class="cta-btn">Get Started</a>
+</section>
+
+<style>
+    /* General Styles */
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    section {
+        margin-bottom: 40px;
+    }
+
+    /* Landing Section */
+    .landing-section {
+        text-align: center;
+        padding: 60px;
+        background-color: #007bff; /* Blue */
+        color: white;
+    }
+
+    .landing-section h1 {
+        font-size: 2.5em;
+        margin-bottom: 20px;
+    }
+
+    .landing-section p {
+        font-size: 1.2em;
+        margin-bottom: 30px;
+    }
+
+    .cta-btn {
+        background-color: #0056b3; /* Dark blue */
+        color: white;
+        padding: 15px 30px;
+        font-size: 18px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .cta-btn:hover {
+        background-color: #003366; /* Even darker blue */
+    }
+
+    /* About Section */
+    .about-section, .features-section {
+        padding: 40px;
+        text-align: center;
+        background-color: #f4f4f9;
+    }
+
+    .about-section h2, .features-section h2 {
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+
+    /* Features Section */
+    .features-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .features-section ul li {
+        font-size: 1.2em;
+        margin: 10px 0;
+    }
+
+    /* Call to Action Section */
+    .cta-section {
+        text-align: center;
+        padding: 40px;
+        background-color: #0056b3; /* Dark blue */
+        color: white;
+    }
+
+    /* Form Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 300px;
+        border-radius: 5px;
+    }
+
+    .modal.hidden {
+        display: none;
+    }
+
+    .modal.show {
+        display: block;
+    }
+
+    form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    label {
+        margin: 5px 0;
+        font-weight: bold;
+    }
+
+    input, select {
+        padding: 8px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        background-color: #007bff; /* Blue */
+        color: white;
+        padding: 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background-color: #0056b3; /* Dark blue */
+    }
+</style>
+
+<script>
+    function toggleForm() {
+        var modal = document.getElementById("formModal");
+        modal.classList.toggle("hidden");
+        modal.classList.toggle("show");
+    }
+
+    function scrollToForm() {
+        document.getElementById("student-form-section").scrollIntoView({ behavior: "smooth" });
+    }
+</script>
+
+{% endblock %}

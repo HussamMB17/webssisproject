@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Colleges{% endblock %}
+
+{% block content %}
+    <h1>College Management</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div>
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <button id="addCollegeButton" onclick="toggleForm('', '')">Add College</button>
+
+    <!-- College Search Form -->
+    <form action="/search_college" method="get">
+        <label for="searchField">Search By:</label>
+        <select id="searchField" name="searchField" required>
+            <option value="collegeCode">College Code</option>
+            <option value="collegeName">College Name</option>
+        </select>
+        <label for="searchValue">Value:</label>
+        <input type="text" id="searchValue" name="searchValue" placeholder="Enter search value" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <!-- Modal for Adding/Editing College -->
+    <div id="formModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="toggleForm('', '')">&times;</span>
+            <form id="college-form" action="{{ url_for('views.add_college') }}" method="post" onsubmit="return confirmUpdate();">
+                <input type="hidden" id="originalCollegeCode" name="originalCollegeCode" value="">
+                <label for="collegeCode">College Code:</label><br>
+                <input type="text" id="collegeCode" name="collegeCode" required><br>
+                <label for="collegeName">College Name:</label><br>
+                <input type="text" id="collegeName" name="collegeName" required><br>
+                <button type="submit" id="submitBtn">Submit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- College Table -->
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>College Code</th>
+                <th>College Name</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if search_result %}
+                <tr>
+                    <td>{{ search_result['collegeCode'] }}</td>
+                    <td>{{ search_result['collegeName'] }}</td>
+                    <td>
+                        <button onclick="toggleForm('{{ search_result['collegeCode'] }}', '{{ search_result['collegeName'] }}')">Edit</button>
+                        <form action="{{ url_for('views.delete_college', collegeCode=search_result['collegeCode']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% elif colleges %}
+                {% for college in colleges %}
+                    <tr>
+                        <td>{{ college['collegeCode'] }}</td>
+                        <td>{{ college['collegeName'] }}</td>
+                        <td>
+                            <button onclick="toggleForm('{{ college['collegeCode'] }}', '{{ college['collegeName'] }}')">Edit</button>
+                            <form action="{{ url_for('views.delete_college', collegeCode=college['collegeCode']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                                <button type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="3">No colleges found.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <script>
+        function toggleForm(collegeCode, collegeName) {
+            var modal = document.getElementById("formModal");
+            var originalCollegeCodeInput = document.getElementById("originalCollegeCode");
+            var codeInput = document.getElementById("collegeCode");
+            var nameInput = document.getElementById("collegeName");
+            var submitBtn = document.getElementById("submitBtn");
+
+            if (collegeCode && collegeName) {
+                originalCollegeCodeInput.value = collegeCode;
+                codeInput.value = collegeCode;
+                nameInput.value = collegeName;
+                submitBtn.textContent = "Update";
+                document.getElementById("college-form").action = "/edit_college/" + collegeCode;
+            } else {
+                originalCollegeCodeInput.value = "";
+                codeInput.value = "";
+                nameInput.value = "";
+                submitBtn.textContent = "Submit";
+                document.getElementById("college-form").action = "/add_college";
+            }
+
+            modal.classList.toggle("hidden");
+            modal.classList.toggle("show");
+        }
+
+        function confirmDelete() {
+            return confirm("Are you sure you want to delete this college?");
+        }
+
+        function confirmUpdate() {
+            return confirm("Are you sure you want to update this college?");
+        }
+    </script>
+
+{% endblock %}
