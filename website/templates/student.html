@@ -154,7 +154,7 @@
             <td>{{ search_result.IDNumber }}</td>
             <td>{{ search_result.firstName }}</td>
             <td>{{ search_result.lastName }}</td>
-            <td>{{ search_result.CourseCode }}</td>
+            <td>{{ student['CourseCode'] }}</td>
             <td>{{ search_result.Year }}</td>
             <td>{{ search_result.Gender }}</td>
             <td>{{ search_result.Status }}</td>
@@ -189,6 +189,38 @@
         {% endif %}
     </tbody>
 </table>
+
+<!-- Pagination Controls -->
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('views.view_students', page=page-1) }}">Previous</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+    <a href="{{ url_for('views.view_students', page=p) }}" 
+       class="{% if p == page %}active{% endif %}">
+       {{ p }}
+    </a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('views.view_students', page=page+1) }}">Next</a>
+    {% endif %}
+</div>
+
+<style>
+    .pagination a {
+        margin: 0 5px;
+        text-decoration: none;
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+    }
+    .pagination a.active {
+        background-color: #007bff;
+        color: white;
+        border: 1px solid #007bff;
+    }
+</style>
 
 <script>
     function toggleForm() {

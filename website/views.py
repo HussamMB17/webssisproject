@@ -15,14 +15,61 @@ def home():
 @views.route('/students', methods=['GET'])
 def view_students():
     conn = mysql.connection  # Access the MySQL connection from Flask
-    students = Students.get_all_students(conn)
 
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)  # Current page, default to 1
+    per_page = 50  # Number of students per page
+    offset = (page - 1) * per_page  # Calculate the offset
+
+    # Query total count of students
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM student")  # Adjust if needed
+    total_students = cursor.fetchone()[0]
+
+    # Calculate total pages
+    total_pages = (total_students + per_page - 1) // per_page  # Ceiling division
+
+    # Fetch paginated students
+    cursor.execute(f"SELECT * FROM student LIMIT {per_page} OFFSET {offset}")
+    results = cursor.fetchall()
+
+    # Fetch column names for building manual dictionaries
+    column_names = [desc[0] for desc in cursor.description]
+    cursor.close()
+
+    # Manually build a dictionary for each row
+    students = []
+    for row in results:
+        row_dict = dict(zip(column_names, row))
+        students.append({
+            "IDNumber": row_dict['IDNumber'],
+            "firstName": row_dict['firstName'],
+            "lastName": row_dict['lastName'],
+            "Year": row_dict['Year'],
+            "Gender": row_dict['Gender'],
+            "Status": row_dict['Status'],
+            "imageURL": row_dict['imageURL'],
+            "CourseCode": row_dict['CourseCode']
+        })
+
+    # Fetch programs for the dropdown
+    programs = Programs.get_all_programs(conn)
+
+    # Update status for each student
     for student in students:
         student_id = student['IDNumber']
         Students.check_and_update_status(conn, student_id)
 
-    programs = Programs.get_all_programs(conn)
-    return render_template('student.html', students=students, programs=programs)
+    # Pass pagination data to the template
+    return render_template(
+        'student.html',
+        students=students,
+        programs=programs,
+        page=page,
+        total_pages=total_pages
+    )
+
+
 
 @views.route('/students/', methods=['GET'])
 def students_redirect():
@@ -60,6 +107,7 @@ def add_student():
         # Allowed file extensions and MIME types
         allowed_extensions = {'jpg', 'jpeg', 'png'}
         allowed_mime_types = {'image/jpeg', 'image/png'}
+        max_file_size = 2 * 1024 * 1024  # 2 MB
 
         # Validate ID format
         if not Students.validate_id_format(idNumber):
@@ -74,6 +122,14 @@ def add_student():
         # Handle image upload
         image_url = None
         if file and file.filename != '':
+            # Validate file size
+            file.seek(0, 2)  # Move to the end of the file
+            file_size = file.tell()  # Get the file size in bytes
+            file.seek(0)  # Reset file pointer to the start
+            
+            if file_size > max_file_size:
+                flash("The uploaded file is too large. Maximum allowed size is 2 MB.", "error")
+                return redirect(url_for('views.view_students'))
             # Extract the file extension and MIME type
             file_extension = file.filename.rsplit('.', 1)[-1].lower()
             file_mime_type = file.mimetype
