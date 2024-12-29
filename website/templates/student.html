@@ -71,7 +71,7 @@
         <span class="close" onclick="toggleEditForm()">&times;</span>
         <form id="edit-student-form" action="" method="post" onsubmit="return confirmUpdate();">
             <label for="editIdNumber">Id Number:</label><br>
-            <input type="text" id="editIdNumber" name="idNumber">
+            <input type="text" id="editIdNumber" name="idNumber" readonly>
             <label for="editFirstName">First Name:</label><br>
             <input type="text" id="editFirstName" name="firstName" required><br>
             <label for="editLastName">Last Name:</label><br>
@@ -107,7 +107,8 @@
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
             </select><br>
-            <br>
+            <label for="editFile">Update Photo (optional):</label>
+            <input type="file" name="file" id="editFile" accept="image/*"><br>
             <button type="submit">Update</button>
         </form>
     </div>

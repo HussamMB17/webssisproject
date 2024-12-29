@@ -57,6 +57,10 @@ def add_student():
         gender = request.form.get("gender")
         file = request.files.get('file')  # Handle the file upload
 
+        # Allowed file extensions and MIME types
+        allowed_extensions = {'jpg', 'jpeg', 'png'}
+        allowed_mime_types = {'image/jpeg', 'image/png'}
+
         # Validate ID format
         if not Students.validate_id_format(idNumber):
             flash("ID Number must be in the format YYYY-NNNN (e.g., 2024-0001)", "error")
@@ -70,6 +74,14 @@ def add_student():
         # Handle image upload
         image_url = None
         if file and file.filename != '':
+            # Extract the file extension and MIME type
+            file_extension = file.filename.rsplit('.', 1)[-1].lower()
+            file_mime_type = file.mimetype
+
+            if file_extension not in allowed_extensions or file_mime_type not in allowed_mime_types:
+                flash("Only image files (JPG, PNG) are allowed.", "error")
+                return redirect(url_for('views.view_students'))
+
             try:
                 upload_result = cloudinary.uploader.upload(file)
                 image_url = upload_result.get('secure_url')
@@ -112,7 +124,6 @@ def delete_student(idNumber):
     return redirect(url_for('views.view_students'))
 
 
-# Edit student
 @views.route('/edit_student/<idNumber>', methods=['GET', 'POST'])
 def edit_student(idNumber):
     conn = mysql.connection
@@ -125,6 +136,7 @@ def edit_student(idNumber):
         new_courseCode = request.form.get("courseCode")
         new_year = request.form.get("year")
         new_gender = request.form.get("gender")
+        file = request.files.get('file')  # Get the uploaded file
 
         student = Students.find_by_id(idNumber)
         if student:
@@ -134,12 +146,34 @@ def edit_student(idNumber):
                 flash(f"ID Number {new_idNumber} is already in use.", "error")
                 return redirect(url_for('views.edit_student', idNumber=idNumber))
 
-            # Proceed with the update
+            # Handle the photo update if a new file is uploaded
+            image_url = student['imageURL']  # Keep the current image URL as default
+            if file and file.filename != '':  # Check if a new file is uploaded
+                # Validate file extension
+                allowed_extensions = {'jpg', 'jpeg', 'png'}
+                allowed_mime_types = {'image/jpeg', 'image/png'}
+
+                file_extension = file.filename.rsplit('.', 1)[-1].lower()
+                file_mime_type = file.mimetype
+
+                if file_extension not in allowed_extensions or file_mime_type not in allowed_mime_types:
+                    flash("Only image files (JPG, PNG) are allowed.", "error")
+                    return redirect(url_for('views.edit_student', idNumber=idNumber))
+
+                try:
+                    # Upload the image using Cloudinary (or your chosen image storage service)
+                    upload_result = cloudinary.uploader.upload(file)
+                    image_url = upload_result.get('secure_url')  # Get the URL of the uploaded image
+                except Exception as e:
+                    flash(f"Error uploading image: {str(e)}", "error")
+                    return redirect(url_for('views.edit_student', idNumber=idNumber))
+
+            # Proceed with updating the student record in the database
             cursor = conn.cursor()
             cursor.execute("""UPDATE student 
-                              SET IDNumber = %s, firstName = %s, lastName = %s, CourseCode = %s, Year = %s, Gender = %s 
+                              SET IDNumber = %s, firstName = %s, lastName = %s, CourseCode = %s, Year = %s, Gender = %s, imageURL = %s
                               WHERE IDNumber = %s""",
-                           (new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender, idNumber))
+                           (new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender, image_url, idNumber))
             conn.commit()
             cursor.close()
 
@@ -151,7 +185,6 @@ def edit_student(idNumber):
 
     student = Students.find_by_id(conn, idNumber)
     return render_template('edit_student.html', student=student)
-
 
 # Add program
 @views.route('/add_program', methods=['GET', 'POST'])
