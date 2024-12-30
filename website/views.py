@@ -432,6 +432,7 @@ def search_program():
 
 
 # Search student
+# Search student
 @views.route('/search_student', methods=['GET'])
 def search_student():
     search_field = request.args.get('searchField')
@@ -453,16 +454,24 @@ def search_student():
 
     # Build the SQL query for gender with length check and exact matching
     if search_field == 'gender':
-        query = f"SELECT * FROM student WHERE LENGTH({field_map[search_field]}) = LENGTH(TRIM(%s)) AND LOWER({field_map[search_field]}) = LOWER(TRIM(%s))"
+        query = f"""
+            SELECT * FROM student 
+            WHERE LENGTH({field_map[search_field]}) = LENGTH(TRIM(%s)) 
+            AND LOWER({field_map[search_field]}) = LOWER(TRIM(%s))
+        """
         params = [search_value, search_value]  # Use the search_value for both length and matching check
     else:
-        query = f"SELECT * FROM student WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)"
+        query = f"""
+            SELECT * FROM student 
+            WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)
+        """
         params = [f"%{search_value}%"]
 
     try:
         conn = mysql.connection  # Use the established connection
         cursor = conn.cursor()  # Using default cursor without MySQLdb import
         cursor.execute(query, params)
+
         # Fetch the results and convert them into a list of dictionaries
         columns = [desc[0] for desc in cursor.description]  # Get column names
         rows = cursor.fetchall()
@@ -472,10 +481,13 @@ def search_student():
         flash(f"An error occurred while searching: {e}", "danger")
         return redirect(url_for('views.view_students'))
 
-    if len(results) == 1:
-        return render_template('student.html', search_result=results[0])  # Single result
-    elif len(results) > 1:
-        return render_template('student.html', students=results)  # Multiple results
+    if len(results) > 0:
+        return render_template(
+            'search_results.html',  # Render a different template for search results
+            students=results, 
+            search_field=search_field, 
+            search_value=search_value
+        )  # Display all results without pagination
     else:
         flash("No students found.", "warning")
         return redirect(url_for('views.view_students'))
