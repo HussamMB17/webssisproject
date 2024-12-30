@@ -180,7 +180,7 @@ def delete_student(idNumber):
         flash("Student deleted successfully!", "success")
     return redirect(url_for('views.view_students'))
 
-
+# Edit student
 @views.route('/edit_student/<idNumber>', methods=['GET', 'POST'])
 def edit_student(idNumber):
     conn = mysql.connection

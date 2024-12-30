@@ -77,17 +77,16 @@
             <label for="editLastName">Last Name:</label><br>
             <input type="text" id="editLastName" name="lastName" required><br>
 
-            <label for="editCourseInput">Select Course:</label><br>
-            <input list="editCourseOptions" id="editCourseInput" name="courseCode" required placeholder="Select or type a course">
-            <datalist id="editCourseOptions">
-                <option value="">Select a course</option>
+            <label for="editCourseCode">Select Course:</label><br>
+            <select id="editCourseCode" name="courseCode" required>
+                <option value="" disabled>Select a course</option>
                 {% for program in programs %}
                 <option value="{{ program['programCode'] }}">{{ program['programCode'] }} - {{ program['programTitle'] }}</option>
                 {% endfor %}
                 {% if not programs %}
-                <option value="">No programs available</option>
+                <option value="" disabled>No programs available</option>
                 {% endif %}
-            </datalist><br>
+            </select><br>
 
 
             <label for="editYear">Year Level:</label>
@@ -251,7 +250,7 @@
         document.getElementById("editIdNumber").value = idNumber;
         document.getElementById("editFirstName").value = firstName;
         document.getElementById("editLastName").value = lastName;
-        document.getElementById("editCourseInput").value = courseCode;
+        document.getElementById("editCourseCode").value = courseCode;
         document.getElementById("editYear").value = year;
         document.getElementById("editGender").value = gender;
 
