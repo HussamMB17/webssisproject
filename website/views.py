@@ -29,8 +29,26 @@ def view_students():
     # Calculate total pages
     total_pages = (total_students + per_page - 1) // per_page  # Ceiling division
 
-    # Fetch paginated students
-    cursor.execute(f"SELECT * FROM student LIMIT {per_page} OFFSET {offset}")
+    # Query paginated students
+    cursor.execute(f"""
+        SELECT 
+            s.IDNumber, 
+            s.firstName, 
+            s.lastName, 
+            s.Year, 
+            s.Gender, 
+            s.Status, 
+            s.imageURL, 
+            p.programCode, 
+            c.collegeName
+        FROM 
+            student s
+        LEFT JOIN 
+            program p ON s.CourseCode = p.programCode
+        LEFT JOIN 
+            college c ON p.programCollege = c.collegeCode
+        LIMIT {per_page} OFFSET {offset};
+    """)
     results = cursor.fetchall()
 
     # Fetch column names for building manual dictionaries
@@ -49,7 +67,7 @@ def view_students():
             "Gender": row_dict['Gender'],
             "Status": row_dict['Status'],
             "imageURL": row_dict['imageURL'],
-            "CourseCode": row_dict['CourseCode']
+            "CourseDetails": f"{row_dict['programCode']} ({row_dict['collegeName']})" if row_dict['programCode'] and row_dict['collegeName'] else row_dict['programCode']
         })
 
     # Fetch programs for the dropdown
@@ -443,7 +461,7 @@ def search_student():
         'idNumber': 'IDNumber',
         'firstName': 'firstName',
         'lastName': 'lastName',
-        'course': 'CourseCode',
+        'course': 'CourseCode',  # We will handle the CourseDetails separately
         'yearLevel': 'Year',
         'gender': 'Gender',
         'status': 'Status'
@@ -453,18 +471,42 @@ def search_student():
         flash("Invalid search field!", "danger")
         return redirect(url_for('views.view_students'))
 
+    # Pagination parameters for search
+    page = request.args.get('page', 1, type=int)  # Current page, default to 1
+    per_page = 50  # Number of students per page
+    offset = (page - 1) * per_page  # Calculate the offset
+
     # Build the SQL query for gender with length check and exact matching
     if search_field == 'gender':
         query = f"""
-            SELECT * FROM student 
+            SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+            FROM student s 
+            LEFT JOIN program p ON s.CourseCode = p.programCode
+            LEFT JOIN college c ON p.programCollege = c.collegeCode
             WHERE LENGTH({field_map[search_field]}) = LENGTH(TRIM(%s)) 
             AND LOWER({field_map[search_field]}) = LOWER(TRIM(%s))
+            LIMIT {per_page} OFFSET {offset}
         """
         params = [search_value, search_value]  # Use the search_value for both length and matching check
+    elif search_field == 'course':
+        # If searching for course, show the combined CourseDetails
+        query = f"""
+            SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+            FROM student s
+            LEFT JOIN program p ON s.CourseCode = p.programCode
+            LEFT JOIN college c ON p.programCollege = c.collegeCode
+            WHERE CONCAT(p.programCode, ' (', c.collegeName, ')') LIKE LOWER(%s)
+            LIMIT {per_page} OFFSET {offset}
+        """
+        params = [f"%{search_value}%"]  # Use LIKE to match CourseDetails
     else:
         query = f"""
-            SELECT * FROM student 
+            SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+            FROM student s
+            LEFT JOIN program p ON s.CourseCode = p.programCode
+            LEFT JOIN college c ON p.programCollege = c.collegeCode
             WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)
+            LIMIT {per_page} OFFSET {offset}
         """
         params = [f"%{search_value}%"]
 
@@ -477,6 +519,18 @@ def search_student():
         columns = [desc[0] for desc in cursor.description]  # Get column names
         rows = cursor.fetchall()
         results = [dict(zip(columns, row)) for row in rows]  # Convert rows to dictionaries
+
+        # Query to get the total count of search results
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM student s
+            LEFT JOIN program p ON s.CourseCode = p.programCode
+            LEFT JOIN college c ON p.programCollege = c.collegeCode
+            WHERE CONCAT(p.programCode, ' (', c.collegeName, ')') LIKE LOWER(%s)
+        """, [f"%{search_value}%"])
+        total_results = cursor.fetchone()[0]
+
+        # Calculate total pages for search results
+        total_pages = (total_results + per_page - 1) // per_page  # Ceiling division
         cursor.close()
     except Exception as e:
         flash(f"An error occurred while searching: {e}", "danger")
@@ -487,8 +541,10 @@ def search_student():
             'search_results.html',  # Render a different template for search results
             students=results, 
             search_field=search_field, 
-            search_value=search_value
-        )  # Display all results without pagination
+            search_value=search_value,
+            page=page,
+            total_pages=total_pages
+        )  # Display paginated results
     else:
         flash("No students found.", "warning")
         return redirect(url_for('views.view_students'))
