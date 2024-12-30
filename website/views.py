@@ -289,7 +289,7 @@ def edit_program(originalProgramCode):
         if program:
             program.update_program(new_programCode, new_programTitle, new_collegeCode)
             conn.commit()
-
+            flash("Program updated successfully!", "success")
         return redirect(url_for('views.view_programs'))
 
     program = Programs.find_by_program(originalProgramCode)
