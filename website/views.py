@@ -177,6 +177,7 @@ def delete_student(idNumber):
         cursor.execute("DELETE FROM student WHERE IDNumber = %s", (student['IDNumber'],))
         conn.commit()
         cursor.close()
+        flash("Student deleted successfully!", "success")
     return redirect(url_for('views.view_students'))
 
 
