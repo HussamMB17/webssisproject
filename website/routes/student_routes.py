@@ -29,65 +29,6 @@ def view_students():
     # Calculate total pages
     total_pages = (total_students + per_page - 1) // per_page  # Ceiling division
 
-    # Query paginated students
-    cursor.execute(f"""
-        SELECT 
-            s.IDNumber, 
-            s.firstName, 
-            s.lastName, 
-            s.Year, 
-            s.Gender, 
-            s.Status, 
-            s.imageURL, 
-            p.programCode, 
-            c.collegeName
-        FROM 
-            student s
-        LEFT JOIN 
-            program p ON s.CourseCode = p.programCode
-        LEFT JOIN 
-            college c ON p.programCollege = c.collegeCode
-        LIMIT {per_page} OFFSET {offset};
-    """)
-    results = cursor.fetchall()
-
-    # Fetch column names for building manual dictionaries
-    column_names = [desc[0] for desc in cursor.description]
-    cursor.close()
-
-    # Manually build a dictionary for each row
-    students = []
-    for row in results:
-        row_dict = dict(zip(column_names, row))
-        students.append({
-            "IDNumber": row_dict['IDNumber'],
-            "firstName": row_dict['firstName'],
-            "lastName": row_dict['lastName'],
-            "Year": row_dict['Year'],
-            "Gender": row_dict['Gender'],
-            "Status": row_dict['Status'],
-            "imageURL": row_dict['imageURL'],
-            "CourseDetails": f"{row_dict['programCode']} ({row_dict['collegeName']})" if row_dict['programCode'] and row_dict['collegeName'] else row_dict['programCode']
-        })
-
-    # Fetch programs for the dropdown
-    programs = Programs.get_all_programs(conn)
-
-    # Update status for each student
-    for student in students:
-        student_id = student['IDNumber']
-        Students.check_and_update_status(conn, student_id)
-
-    # Pass pagination data to the template
-    return render_template(
-        'student.html',
-        students=students,
-        programs=programs,
-        page=page,
-        total_pages=total_pages
-    )
-
-
 
 @student_bp.route('/students/', methods=['GET'])
 def students_redirect():
