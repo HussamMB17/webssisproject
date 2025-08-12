@@ -22,7 +22,7 @@
 <div id="formModal" class="modal hidden">
     <div class="modal-content">
         <span class="close" onclick="toggleForm()">X</span>
-        <form id="student-form" action="/add_student" method="post" enctype="multipart/form-data">
+        <form id="student-form" action="{{ url_for('student_bp.add_student') }}" method="post" enctype="multipart/form-data">
             <label for="idNumber">ID Number:</label><br>
             <input type="text" id="idNumber" name="idNumber" required><br>
             <label for="firstName">First Name:</label><br>
@@ -58,18 +58,17 @@
                 <option value="Other">Other</option>
             </select><br>
             <label for="file">Select image:</label>
-            <input type="file" name="file" id="file" accept="image/*" ><br>
+            <input type="file" name="file" id="file" accept="image/*"><br>
             <button type="submit">Submit</button>
         </form>
     </div>
 </div>
 
-
 <!-- Edit Student Modal -->
 <div id="editModal" class="modal hidden">
     <div class="modal-content">
         <span class="close" onclick="toggleEditForm()">&times;</span>
-        <form id="edit-student-form" action="" method="post" onsubmit="return confirmUpdate();">
+        <form id="edit-student-form" action="" method="post" enctype="multipart/form-data" onsubmit="return confirmUpdate();">
             <label for="editIdNumber">Id Number:</label><br>
             <input type="text" id="editIdNumber" name="idNumber" readonly>
             <label for="editFirstName">First Name:</label><br>
@@ -87,7 +86,6 @@
                 <option value="" disabled>No programs available</option>
                 {% endif %}
             </select><br>
-
 
             <label for="editYear">Year Level:</label>
             <select id="editYear" name="year" required>
@@ -114,7 +112,7 @@
 </div>
 
 <!-- Search Form -->
-<form action="/search_student" method="get">
+<form action="{{ url_for('student_bp.search_student') }}" method="get">
     <label for="searchField">Search By:</label>
     <select id="searchField" name="searchField" required>
         <option value="idNumber">Student ID</option>
@@ -143,7 +141,7 @@
             <th>Year</th>
             <th>Gender</th>
             <th>Status</th>
-            <th>Photo</th> <!-- New column for the photo -->
+            <th>Photo</th>
             <th>Action</th>
         </tr>
     </thead>
@@ -157,16 +155,15 @@
             <td>{{ search_result.Year }}</td>
             <td>{{ search_result.Gender }}</td>
             <td>{{ search_result.Status }}</td>
-            <td><img src="{{ search_result.imageURL }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
+            <td><img src="{{ search_result.imageURL }}" alt="Student Photo" width="50"></td>
             <td>
                 <button onclick="openEditForm('{{ search_result.IDNumber }}', '{{ search_result.firstName }}', '{{ search_result.lastName }}', '{{ search_result.CourseCode }}', '{{ search_result.Year }}', '{{ search_result.Gender }}')">Edit</button>
-                <form action="/delete_student/{{ search_result.IDNumber }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                <form action="{{ url_for('student_bp.delete_student', idNumber=search_result.IDNumber) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
                     <button type="submit">Delete</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <!-- Show all students when there's no search result -->
         {% for student in students %}
         <tr>
             <td>{{ student['IDNumber'] }}</td>
@@ -176,10 +173,10 @@
             <td>{{ student['Year'] }}</td>
             <td>{{ student['Gender'] }}</td>
             <td>{{ student['Status'] }}</td>
-            <td><img src="{{ student['imageURL'] }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
+            <td><img src="{{ student['imageURL'] }}" alt="Student Photo" width="50"></td>
             <td>
                 <button onclick="openEditForm('{{ student['IDNumber'] }}', '{{ student['firstName'] }}', '{{ student['lastName'] }}', '{{ student['CourseCode'] }}', '{{ student['Year'] }}', '{{ student['Gender'] }}')">Edit</button>
-                <form action="/delete_student/{{ student['IDNumber'] }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                <form action="{{ url_for('student_bp.delete_student', idNumber=student['IDNumber']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
                     <button type="submit">Delete</button>
                 </form>
             </td>
@@ -192,34 +189,17 @@
 <!-- Pagination Controls -->
 <div class="pagination">
     {% if page > 1 %}
-    <a href="{{ url_for('views.view_students', page=page-1) }}">Previous</a>
+    <a href="{{ url_for('student_bp.view_students', page=page-1) }}">Previous</a>
     {% endif %}
 
     {% for p in range(1, total_pages + 1) %}
-    <a href="{{ url_for('views.view_students', page=p) }}" 
-       class="{% if p == page %}active{% endif %}">
-       {{ p }}
-    </a>
+    <a href="{{ url_for('student_bp.view_students', page=p) }}" class="{% if p == page %}active{% endif %}">{{ p }}</a>
     {% endfor %}
 
     {% if page < total_pages %}
-    <a href="{{ url_for('views.view_students', page=page+1) }}">Next</a>
+    <a href="{{ url_for('student_bp.view_students', page=page+1) }}">Next</a>
     {% endif %}
 </div>
-
-<style>
-    .pagination a {
-        margin: 0 5px;
-        text-decoration: none;
-        padding: 5px 10px;
-        border: 1px solid #ddd;
-    }
-    .pagination a.active {
-        background-color: #007bff;
-        color: white;
-        border: 1px solid #007bff;
-    }
-</style>
 
 <script>
     function toggleForm() {
@@ -254,10 +234,10 @@
         document.getElementById("editYear").value = year;
         document.getElementById("editGender").value = gender;
 
-        // Dynamically update the form action to include the correct idNumber
-        document.getElementById("edit-student-form").action = `/edit_student/${idNumber}`;
+        // Set correct action dynamically
+        document.getElementById("edit-student-form").action = "{{ url_for('student_bp.edit_student', idNumber='__ID__') }}".replace('__ID__', idNumber);
 
-        toggleEditForm();  // Show the edit form
+        toggleEditForm();
     }
 
     function confirmDelete() {
@@ -268,5 +248,4 @@
         return confirm("Are you sure you want to update this student?");
     }
 </script>
-
 {% endblock %}

@@ -41,7 +41,13 @@ def create_app():
     # Initialize MySQL with the app
     mysql.init_app(app)
 
-    from .views import views
-    app.register_blueprint(views, url_prefix="/")
+    from .routes.student_routes import student_bp
+    from .routes.college_routes import college_bp
+    from .routes.program_routes import program_bp
+
+    # Register blueprints
+    app.register_blueprint(student_bp, url_prefix="/")
+    app.register_blueprint(college_bp, url_prefix="/")
+    app.register_blueprint(program_bp, url_prefix="/")
 
     return app, mysql

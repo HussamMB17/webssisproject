@@ -11,7 +11,7 @@ class Students:
         self.year = year
         self.gender = gender
         self.status = status
-        self.image_url = image_url  # New field for the image URL
+        self.imageURL = image_url  # New field for the image URL
 
     def save_student(self):
         conn = mysql.connection  # Access the MySQL connection from Flask
@@ -20,7 +20,7 @@ class Students:
             INSERT INTO student (IDNumber, firstName, lastName, CourseCode, Year, Gender, Status, imageURL)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(sql, (self.idNumber, self.firstName, self.lastName, self.courseCode, self.year, self.gender, self.status, self.image_url))
+        cursor.execute(sql, (self.idNumber, self.firstName, self.lastName, self.courseCode, self.year, self.gender, self.status, self.imageURL))
         conn.commit()
         cursor.close()
 
