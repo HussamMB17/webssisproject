@@ -47,6 +47,61 @@ class Students:
         # Return the list of student dictionaries
         return students_dict
 
+    @staticmethod
+    def get_students_paginated(conn, page=1, per_page=50):
+        """Get paginated students with course and college details"""
+        offset = (page - 1) * per_page
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT 
+                s.IDNumber, 
+                s.firstName, 
+                s.lastName, 
+                s.Year, 
+                s.Gender, 
+                s.Status, 
+                s.imageURL, 
+                p.programCode, 
+                c.collegeName
+            FROM 
+                student s
+            LEFT JOIN 
+                program p ON s.CourseCode = p.programCode
+            LEFT JOIN 
+                college c ON p.programCollege = c.collegeCode
+            LIMIT %s OFFSET %s
+        """, (per_page, offset))
+        
+        results = cursor.fetchall()
+        column_names = [desc[0] for desc in cursor.description]
+        cursor.close()
+
+        # Build student dictionaries
+        students = []
+        for row in results:
+            row_dict = dict(zip(column_names, row))
+            students.append({
+                "IDNumber": row_dict['IDNumber'],
+                "firstName": row_dict['firstName'],
+                "lastName": row_dict['lastName'],
+                "Year": row_dict['Year'],
+                "Gender": row_dict['Gender'],
+                "Status": row_dict['Status'],
+                "imageURL": row_dict['imageURL'],
+                "CourseDetails": f"{row_dict['programCode']} ({row_dict['collegeName']})" if row_dict['programCode'] and row_dict['collegeName'] else row_dict['programCode']
+            })
+        
+        return students
+
+    @staticmethod
+    def get_total_student_count(conn):
+        """Get total count of students"""
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM student")
+        total_students = cursor.fetchone()[0]
+        cursor.close()
+        return total_students
 
     def update_student(self, new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender,
                        new_status, new_image_url=None):
@@ -57,6 +112,17 @@ class Students:
             SET IDNumber = %s, firstName = %s, lastName = %s, CourseCode = %s, Year = %s, Gender = %s, Status = %s, imageURL = %s
             WHERE IDNumber = %s""",
                        (new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender, new_status, new_image_url, self.idNumber))
+        conn.commit()
+        cursor.close()
+
+    @staticmethod
+    def update_student_by_id(conn, old_id, new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender, image_url):
+        """Update student by ID - moved from routes"""
+        cursor = conn.cursor()
+        cursor.execute("""UPDATE student 
+                          SET IDNumber = %s, firstName = %s, lastName = %s, CourseCode = %s, Year = %s, Gender = %s, imageURL = %s
+                          WHERE IDNumber = %s""",
+                       (new_idNumber, new_firstName, new_lastName, new_courseCode, new_year, new_gender, image_url, old_id))
         conn.commit()
         cursor.close()
 
@@ -85,22 +151,131 @@ class Students:
         cursor.close()
 
     @staticmethod
-    def find_by_id(idNumber):
-        conn = mysql.connection  # Access the MySQL connection from Flask
-        cursor = conn.cursor()  # Use a regular cursor (not dictionary=True)
+    def delete_by_id(conn, idNumber):
+        """Delete student by ID - moved from routes"""
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM student WHERE IDNumber = %s", (idNumber,))
+        conn.commit()
+        cursor.close()
+
+    @staticmethod
+    def find_by_id(conn, idNumber):
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM student WHERE IDNumber = %s", (idNumber,))
-        row = cursor.fetchone()  # Fetch the single row
+        row = cursor.fetchone()
 
         if row:
-            # Manually create a dictionary using column names
-            columns = [desc[0] for desc in cursor.description]  # Get column names
-            result = dict(zip(columns, row))  # Convert row to a dictionary
+            columns = [desc[0] for desc in cursor.description]
+            result = dict(zip(columns, row))
             cursor.close()
-            return result  # Return the dictionary
+            return result
 
         cursor.close()
-        return None  # Return None if no row is found
+        return None
 
+    @staticmethod
+    def search_students(conn, search_field, search_value, page=1, per_page=50):
+        """Search students with pagination - moved from routes"""
+        offset = (page - 1) * per_page
+        
+        field_map = {
+            'idNumber': 'IDNumber',
+            'firstName': 'firstName',
+            'lastName': 'lastName',
+            'course': 'CourseCode',
+            'yearLevel': 'Year',
+            'gender': 'Gender',
+            'status': 'Status'
+        }
+
+        cursor = conn.cursor()
+
+        # Build the SQL query based on search field
+        if search_field == 'gender':
+            query = f"""
+                SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+                FROM student s 
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE LENGTH({field_map[search_field]}) = LENGTH(TRIM(%s)) 
+                AND LOWER({field_map[search_field]}) = LOWER(TRIM(%s))
+                LIMIT %s OFFSET %s
+            """
+            params = [search_value, search_value, per_page, offset]
+        elif search_field == 'course':
+            query = """
+                SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+                FROM student s
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE CONCAT(p.programCode, ' (', c.collegeName, ')') LIKE LOWER(%s)
+                LIMIT %s OFFSET %s
+            """
+            params = [f"%{search_value}%", per_page, offset]
+        else:
+            query = f"""
+                SELECT s.IDNumber, s.firstName, s.lastName, s.Year, s.Gender, s.Status, s.imageURL, p.programCode, c.collegeName
+                FROM student s
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)
+                LIMIT %s OFFSET %s
+            """
+            params = [f"%{search_value}%", per_page, offset]
+
+        cursor.execute(query, params)
+        columns = [desc[0] for desc in cursor.description]
+        rows = cursor.fetchall()
+        results = [dict(zip(columns, row)) for row in rows]
+        cursor.close()
+
+        return results
+
+    @staticmethod
+    def get_search_count(conn, search_field, search_value):
+        """Get total count of search results - moved from routes"""
+        cursor = conn.cursor()
+        
+        field_map = {
+            'idNumber': 'IDNumber',
+            'firstName': 'firstName',
+            'lastName': 'lastName',
+            'course': 'CourseCode',
+            'yearLevel': 'Year',
+            'gender': 'Gender',
+            'status': 'Status'
+        }
+
+        if search_field == 'gender':
+            query = f"""
+                SELECT COUNT(*) FROM student s
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE LENGTH({field_map[search_field]}) = LENGTH(TRIM(%s)) 
+                AND LOWER({field_map[search_field]}) = LOWER(TRIM(%s))
+            """
+            params = [search_value, search_value]
+        elif search_field == 'course':
+            query = """
+                SELECT COUNT(*) FROM student s
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE CONCAT(p.programCode, ' (', c.collegeName, ')') LIKE LOWER(%s)
+            """
+            params = [f"%{search_value}%"]
+        else:
+            query = f"""
+                SELECT COUNT(*) FROM student s
+                LEFT JOIN program p ON s.CourseCode = p.programCode
+                LEFT JOIN college c ON p.programCollege = c.collegeCode
+                WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)
+            """
+            params = [f"%{search_value}%"]
+
+        cursor.execute(query, params)
+        total_results = cursor.fetchone()[0]
+        cursor.close()
+        return total_results
 
     @staticmethod
     def check_and_update_status(conn, idNumber):
@@ -180,6 +355,30 @@ class Programs:
         finally:
             cursor.close()  # Ensure the cursor is closed after execution
 
+    @staticmethod
+    def search_programs(conn, search_field, search_value):
+        """Search programs - moved from routes"""
+        field_map = {
+            'programCode': 'programCode',
+            'programTitle': 'programTitle',
+            'programCollege': 'programCollege'
+        }
+        
+        query = f"SELECT * FROM program WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)"
+        params = [f"%{search_value}%"]
+        
+        cursor = conn.cursor()
+        try:
+            cursor.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            results = [dict(zip(columns, row)) for row in rows]
+            return results
+        except Exception as e:
+            print(f"Error searching programs: {e}")
+            return []
+        finally:
+            cursor.close()
 
     @staticmethod
     def find_by_program(programCode):
@@ -258,6 +457,29 @@ class Colleges:
         finally:
             cursor.close()  # Ensure the cursor is closed
 
+    @staticmethod
+    def search_colleges(conn, search_field, search_value):
+        """Search colleges - moved from routes"""
+        field_map = {
+            'collegeCode': 'collegeCode',
+            'collegeName': 'collegeName'
+        }
+        
+        query = f"SELECT * FROM college WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)"
+        params = [f"%{search_value}%"]
+        
+        cursor = conn.cursor()
+        try:
+            cursor.execute(query, params)
+            columns = [desc[0] for desc in cursor.description]
+            rows = cursor.fetchall()
+            results = [dict(zip(columns, row)) for row in rows]
+            return results
+        except Exception as e:
+            print(f"Error searching colleges: {e}")
+            return []
+        finally:
+            cursor.close()
 
     @staticmethod
     def check_college_exists(collegeCode):

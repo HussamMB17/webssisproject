@@ -38,7 +38,6 @@ def add_college():
 
     return render_template('college.html')
 
-
 # Delete college
 @college_bp.route('/delete_college/<collegeCode>', methods=['POST'])
 def delete_college(collegeCode):
@@ -88,18 +87,11 @@ def search_college():
         flash("Invalid search field!", "danger")
         return redirect(url_for('college_bp.college_page'))
 
-    query = f"SELECT * FROM college WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)"
-    params = [f"%{search_value}%"]
-
     try:
-        conn = mysql.connection  # Use the established connection
-        cursor = conn.cursor()  # Using default cursor without MySQLdb import
-        cursor.execute(query, params)
-        # Fetch the results and convert them into a list of dictionaries
-        columns = [desc[0] for desc in cursor.description]  # Get column names
-        rows = cursor.fetchall()
-        results = [dict(zip(columns, row)) for row in rows]  # Convert rows to dictionaries
-        cursor.close()
+        conn = mysql.connection
+        # Use model method instead of direct query
+        results = Colleges.search_colleges(conn, search_field, search_value)
+        
     except Exception as e:
         flash(f"An error occurred while searching: {e}", "danger")
         return redirect(url_for('college_bp.college_page'))
@@ -111,5 +103,3 @@ def search_college():
     else:
         flash("No colleges found.", "warning")
         return redirect(url_for('college_bp.college_page'))
-    
-    

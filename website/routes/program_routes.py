@@ -50,7 +50,6 @@ def delete_program(program_code):
         flash(f"An error occurred while trying to delete the program: {e}", "error")
     return redirect(url_for('program_bp.view_programs'))
 
-
 # Edit program
 @program_bp.route('/edit_program/<originalProgramCode>', methods=['GET', 'POST'])
 def edit_program(originalProgramCode):
@@ -69,7 +68,7 @@ def edit_program(originalProgramCode):
         return redirect(url_for('program_bp.view_programs'))
 
     program = Programs.find_by_program(originalProgramCode)
-    colleges = Colleges.get_all_colleges()
+    colleges = Colleges.get_all_colleges(conn)  # Fixed: Added conn parameter
     return render_template('edit_program.html', program=program, colleges=colleges)
 
 # Search program
@@ -86,23 +85,16 @@ def search_program():
 
     if search_field not in field_map:
         flash("Invalid search field!", "danger")
-        return redirect(url_for('program_bp.program_page'))
-
-    query = f"SELECT * FROM program WHERE LOWER({field_map[search_field]}) LIKE LOWER(%s)"
-    params = [f"%{search_value}%"]
+        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
 
     try:
-        conn = mysql.connection  # Use the established connection
-        cursor = conn.cursor()  # Using default cursor without MySQLdb import
-        cursor.execute(query, params)
-        # Fetch the results and convert them into a list of dictionaries
-        columns = [desc[0] for desc in cursor.description]  # Get column names
-        rows = cursor.fetchall()
-        results = [dict(zip(columns, row)) for row in rows]  # Convert rows to dictionaries
-        cursor.close()
+        conn = mysql.connection
+        # Use model method instead of direct query
+        results = Programs.search_programs(conn, search_field, search_value)
+        
     except Exception as e:
         flash(f"An error occurred while searching: {e}", "danger")
-        return redirect(url_for('program_bp.program_page'))
+        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
 
     if len(results) == 1:
         return render_template('program.html', search_result=results[0])  # Single result
@@ -110,4 +102,4 @@ def search_program():
         return render_template('program.html', programs=results)  # Multiple results
     else:
         flash("No programs found.", "warning")
-        return redirect(url_for('program_bp.program_page'))
+        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
