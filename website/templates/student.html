@@ -16,6 +16,14 @@
     {% endif %}
 {% endwith %}
 
+<!-- Search Results Info -->
+{% if search_field and search_value %}
+    <div class="search-info" style="background-color: #e7f3ff; padding: 10px; margin: 10px 0; border-left: 4px solid #2196F3;">
+        <strong>Search Results:</strong> Looking for "{{ search_value }}" in {{ search_field }}
+        <a href="{{ url_for('student_bp.view_students') }}" style="margin-left: 15px; color: #2196F3;">[View All Students]</a>
+    </div>
+{% endif %}
+
 <button id="addStudentButton" onclick="toggleForm()">Add Student</button>
 
 <!-- Add Student Modal -->
@@ -115,78 +123,74 @@
 <form action="{{ url_for('student_bp.search_student') }}" method="get">
     <label for="searchField">Search By:</label>
     <select id="searchField" name="searchField" required>
-        <option value="idNumber">Student ID</option>
-        <option value="firstName">First Name</option>
-        <option value="lastName">Last Name</option>
-        <option value="course">Course</option>
-        <option value="yearLevel">Year Level</option>
-        <option value="gender">Gender</option>
-        <option value="status">Status</option>
+        <option value="idNumber" {% if search_field == 'idNumber' %}selected{% endif %}>Student ID</option>
+        <option value="firstName" {% if search_field == 'firstName' %}selected{% endif %}>First Name</option>
+        <option value="lastName" {% if search_field == 'lastName' %}selected{% endif %}>Last Name</option>
+        <option value="course" {% if search_field == 'course' %}selected{% endif %}>Course</option>
+        <option value="yearLevel" {% if search_field == 'yearLevel' %}selected{% endif %}>Year Level</option>
+        <option value="gender" {% if search_field == 'gender' %}selected{% endif %}>Gender</option>
+        <option value="status" {% if search_field == 'status' %}selected{% endif %}>Status</option>
     </select>
 
     <label for="searchValue">Search Value:</label>
-    <input type="text" id="searchValue" name="searchValue" placeholder="Enter search value" required>
+    <input type="text" id="searchValue" name="searchValue" value="{{ search_value or '' }}" placeholder="Enter search value" required>
 
     <button type="submit">Search</button>
 </form>
 
-<!-- Student Table -->
-<table border="1" cellpadding="10">
-    <thead>
-        <tr>
-            <th>Photo</th>
-            <th>ID Number</th>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Program</th>
-            <th>Year</th>
-            <th>Gender</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if search_result %}
-        <tr>
-            <td><img src="{{ student['imageURL'] if student['imageURL'] else url_for('static', filename='images/default.png') }}" alt="Student Photo" width="50"></td>
-            <td>{{ search_result.IDNumber }}</td>
-            <td>{{ search_result.firstName }}</td>
-            <td>{{ search_result.lastName }}</td>
-            <td>{{ student['CourseDetails'] }}</td>
-            <td>{{ search_result.Year }}</td>
-            <td>{{ search_result.Gender }}</td>
-            <td>{{ search_result.Status }}</td>
-            <td>
-                <button onclick="openEditForm('{{ search_result.IDNumber }}', '{{ search_result.firstName }}', '{{ search_result.lastName }}', '{{ search_result.CourseCode }}', '{{ search_result.Year }}', '{{ search_result.Gender }}')">Edit</button>
-                <form action="{{ url_for('student_bp.delete_student', idNumber=search_result.IDNumber) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
-                    <button type="submit">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        {% for student in students %}
-        <tr>
-            <td><img src="{{ student['imageURL'] if student['imageURL'] else url_for('static', filename='images/default.png') }}" alt="Student Photo" width="50"></td>
-            <td>{{ student['IDNumber'] }}</td>
-            <td>{{ student['firstName'] }}</td>
-            <td>{{ student['lastName'] }}</td>
-            <td>{{ student['CourseDetails'] }}</td>
-            <td>{{ student['Year'] }}</td>
-            <td>{{ student['Gender'] }}</td>
-            <td>{{ student['Status'] }}</td>
-            <td>
-                <button onclick="openEditForm('{{ student['IDNumber'] }}', '{{ student['firstName'] }}', '{{ student['lastName'] }}', '{{ student['CourseCode'] }}', '{{ student['Year'] }}', '{{ student['Gender'] }}')">Edit</button>
-                <form action="{{ url_for('student_bp.delete_student', idNumber=student['IDNumber']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
-                    <button type="submit">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
+{% if no_results %}
+    <!-- No results message - replaces the table -->
+    <div style="text-align: center; padding: 50px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin: 20px 0;">
+        <div style="font-size: 48px; color: #856404; margin-bottom: 20px;">🔍</div>
+        <h3 style="color: #856404; margin-bottom: 10px;">No Students Found</h3>
+        <p style="color: #856404; margin-bottom: 20px;">
+            No students match your search criteria for "<strong>{{ search_value }}</strong>" in {{ search_field }}.
+        </p>
+        <a href="{{ url_for('student_bp.view_students') }}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            ← Back to All Students
+        </a>
+    </div>
+{% else %}
+    <!-- Student Table - only shown when there are results -->
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>Photo</th>
+                <th>ID Number</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Program</th>
+                <th>Year</th>
+                <th>Gender</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td><img src="{{ student['imageURL'] if student['imageURL'] else url_for('static', filename='images/default.png') }}" alt="Student Photo" width="50"></td>
+                <td>{{ student['IDNumber'] }}</td>
+                <td>{{ student['firstName'] }}</td>
+                <td>{{ student['lastName'] }}</td>
+                <td>{{ student['CourseDetails'] }}</td>
+                <td>{{ student['Year'] }}</td>
+                <td>{{ student['Gender'] }}</td>
+                <td>{{ student['Status'] }}</td>
+                <td>
+                    <button onclick="openEditForm('{{ student['IDNumber'] }}', '{{ student['firstName'] }}', '{{ student['lastName'] }}', '{{ student['CourseCode'] }}', '{{ student['Year'] }}', '{{ student['Gender'] }}')">Edit</button>
+                    <form action="{{ url_for('student_bp.delete_student', idNumber=student['IDNumber']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
+                        <button type="submit">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endif %}
 
-<!-- Pagination Controls -->
+<!-- Pagination Controls - only shown when there are results and not searching -->
+{% if not no_results and not search_field %}
 <div class="pagination">
     {% if page > 1 %}
     <a href="{{ url_for('student_bp.view_students', page=page-1) }}">Previous</a>
@@ -200,6 +204,36 @@
     <a href="{{ url_for('student_bp.view_students', page=page+1) }}">Next</a>
     {% endif %}
 </div>
+{% elif not no_results and search_field and total_pages > 1 %}
+<!-- Search Pagination -->
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('student_bp.search_student', searchField=search_field, searchValue=search_value, page=page-1) }}">Previous</a>
+    {% endif %}
+
+    {% for p in range(1, total_pages + 1) %}
+    <a href="{{ url_for('student_bp.search_student', searchField=search_field, searchValue=search_value, page=p) }}" class="{% if p == page %}active{% endif %}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < total_pages %}
+    <a href="{{ url_for('student_bp.search_student', searchField=search_field, searchValue=search_value, page=page+1) }}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+    .pagination a {
+        margin: 0 5px;
+        text-decoration: none;
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+    }
+    .pagination a.active {
+        background-color: #007bff;
+        color: white;
+        border: 1px solid #007bff;
+    }
+</style>
 
 <script>
     function toggleForm() {

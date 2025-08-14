@@ -85,7 +85,7 @@ def search_program():
 
     if search_field not in field_map:
         flash("Invalid search field!", "danger")
-        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
+        return redirect(url_for('program_bp.view_programs'))
 
     try:
         conn = mysql.connection
@@ -94,12 +94,17 @@ def search_program():
         
     except Exception as e:
         flash(f"An error occurred while searching: {e}", "danger")
-        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
+        return redirect(url_for('program_bp.view_programs'))
 
-    if len(results) == 1:
-        return render_template('program.html', search_result=results[0])  # Single result
-    elif len(results) > 1:
-        return render_template('program.html', programs=results)  # Multiple results
-    else:
-        flash("No programs found.", "warning")
-        return redirect(url_for('program_bp.view_programs'))  # Fixed: Changed to view_programs
+    # Get colleges for the dropdown in the modal
+    colleges = Colleges.get_all_colleges(conn)
+
+    # Always render the program template with search context
+    return render_template(
+        'program.html',
+        programs=results if len(results) > 0 else [],
+        search_field=search_field,
+        search_value=search_value,
+        no_results=(len(results) == 0),
+        colleges=colleges  # Pass colleges for the add/edit form
+    )

@@ -243,21 +243,41 @@ def search_student():
         total_results = Students.get_search_count(conn, search_field, search_value)
 
         # Calculate total pages for search results
-        total_pages = (total_results + per_page - 1) // per_page
+        total_pages = (total_results + per_page - 1) // per_page if total_results > 0 else 1
+
+        # Get programs for the dropdown in the modals
+        programs = Programs.get_all_programs(conn)
 
     except Exception as e:
         flash(f"An error occurred while searching: {e}", "danger")
         return redirect(url_for('student_bp.view_students'))
 
-    if len(results) > 0:
-        return render_template(
-            'search_results.html',
-            students=results, 
-            search_field=search_field, 
-            search_value=search_value,
-            page=page,
-            total_pages=total_pages
-        )
-    else:
-        flash("No students found.", "warning")
-        return redirect(url_for('student_bp.view_students'))
+    # Convert results to the format expected by the template
+    formatted_students = []
+    if results:
+        for result in results:
+            formatted_student = {
+                'IDNumber': result.get('IDNumber'),
+                'firstName': result.get('firstName'),
+                'lastName': result.get('lastName'),
+                'CourseCode': result.get('programCode'),  # Use programCode from the search results
+                'Year': result.get('Year'),
+                'Gender': result.get('Gender'),
+                'Status': result.get('Status'),
+                'imageURL': result.get('imageURL'),
+                'CourseDetails': f"{result.get('programCode')} ({result.get('collegeName')})" if result.get('programCode') and result.get('collegeName') else result.get('programCode')
+            }
+            formatted_students.append(formatted_student)
+
+    # Always render the student template with search context
+    # Change 'students.html' to match your actual template name
+    return render_template(
+        'student.html',  # or whatever your student template is actually named
+        students=formatted_students,
+        search_field=search_field,
+        search_value=search_value,
+        no_results=(len(formatted_students) == 0),
+        page=page,
+        total_pages=total_pages,
+        programs=programs  # Pass programs for the add/edit form
+    )

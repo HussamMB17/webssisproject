@@ -96,10 +96,11 @@ def search_college():
         flash(f"An error occurred while searching: {e}", "danger")
         return redirect(url_for('college_bp.college_page'))
 
-    if len(results) == 1:
-        return render_template('college.html', search_result=results[0])  # Single result
-    elif len(results) > 1:
-        return render_template('college.html', colleges=results)  # Multiple results
-    else:
-        flash("No colleges found.", "warning")
-        return redirect(url_for('college_bp.college_page'))
+    # Always render the college template with search context
+    return render_template(
+        'college.html',
+        colleges=results if len(results) > 0 else [],
+        search_field=search_field,
+        search_value=search_value,
+        no_results=(len(results) == 0)
+    )

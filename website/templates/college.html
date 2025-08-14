@@ -16,17 +16,25 @@
   {% endif %}
 {% endwith %}
 
+<!-- Search Results Info -->
+{% if search_field and search_value %}
+    <div class="search-info" style="background-color: #e7f3ff; padding: 10px; margin: 10px 0; border-left: 4px solid #2196F3;">
+        <strong>Search Results:</strong> Looking for "{{ search_value }}" in {{ search_field }}
+        <a href="{{ url_for('college_bp.college_page') }}" style="margin-left: 15px; color: #2196F3;">[View All Colleges]</a>
+    </div>
+{% endif %}
+
 <button id="addCollegeButton" onclick="toggleForm('', '')">Add College</button>
 
 <!-- College Search Form -->
 <form action="{{ url_for('college_bp.search_college') }}" method="get">
     <label for="searchField">Search By:</label>
     <select id="searchField" name="searchField" required>
-        <option value="collegeCode">College Code</option>
-        <option value="collegeName">College Name</option>
+        <option value="collegeCode" {% if search_field == 'collegeCode' %}selected{% endif %}>College Code</option>
+        <option value="collegeName" {% if search_field == 'collegeName' %}selected{% endif %}>College Name</option>
     </select>
     <label for="searchValue">Value:</label>
-    <input type="text" id="searchValue" name="searchValue" placeholder="Enter search value" required>
+    <input type="text" id="searchValue" name="searchValue" value="{{ search_value or '' }}" placeholder="Enter search value" required>
     <button type="submit">Search</button>
 </form>
 
@@ -45,28 +53,29 @@
     </div>
 </div>
 
-<!-- College Table -->
-<table border="1" cellpadding="10">
-    <thead>
-        <tr>
-            <th>College Code</th>
-            <th>College Name</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if search_result %}
+{% if no_results %}
+    <!-- No results message - replaces the table -->
+    <div style="text-align: center; padding: 50px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin: 20px 0;">
+        <div style="font-size: 48px; color: #856404; margin-bottom: 20px;">🔍</div>
+        <h3 style="color: #856404; margin-bottom: 10px;">No Colleges Found</h3>
+        <p style="color: #856404; margin-bottom: 20px;">
+            No colleges match your search criteria for "<strong>{{ search_value }}</strong>" in {{ search_field }}.
+        </p>
+        <a href="{{ url_for('college_bp.college_page') }}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            ← Back to All Colleges
+        </a>
+    </div>
+{% else %}
+    <!-- College Table - only shown when there are results -->
+    <table border="1" cellpadding="10">
+        <thead>
             <tr>
-                <td>{{ search_result['collegeCode'] }}</td>
-                <td>{{ search_result['collegeName'] }}</td>
-                <td>
-                    <button onclick="toggleForm('{{ search_result['collegeCode'] }}', '{{ search_result['collegeName'] }}')">Edit</button>
-                    <form action="{{ url_for('college_bp.delete_college', collegeCode=search_result['collegeCode']) }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
+                <th>College Code</th>
+                <th>College Name</th>
+                <th>Action</th>
             </tr>
-        {% elif colleges %}
+        </thead>
+        <tbody>
             {% for college in colleges %}
                 <tr>
                     <td>{{ college['collegeCode'] }}</td>
@@ -79,13 +88,9 @@
                     </td>
                 </tr>
             {% endfor %}
-        {% else %}
-            <tr>
-                <td colspan="3">No college_bp found.</td>
-            </tr>
-        {% endif %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+{% endif %}
 
 <!-- Pass Flask-generated URLs to JS -->
 <script>
@@ -132,6 +137,5 @@
         return confirm("Are you sure you want to update this college?");
     }
 </script>
-
 
 {% endblock %}

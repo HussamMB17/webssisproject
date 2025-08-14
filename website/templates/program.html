@@ -18,18 +18,26 @@
   {% endif %}
 {% endwith %}
 
+<!-- Search Results Info -->
+{% if search_field and search_value %}
+    <div class="search-info" style="background-color: #e7f3ff; padding: 10px; margin: 10px 0; border-left: 4px solid #2196F3;">
+        <strong>Search Results:</strong> Looking for "{{ search_value }}" in {{ search_field }}
+        <a href="{{ url_for('program_bp.view_programs') }}" style="margin-left: 15px; color: #2196F3;">[View All Programs]</a>
+    </div>
+{% endif %}
+
 <button id="addProgramButton" onclick="toggleForm('', '', '')">Add Program</button>
 
 <!-- Search Form -->
 <form action="/search_program" method="get">
     <label for="searchField">Search By:</label>
     <select id="searchField" name="searchField" required>
-        <option value="programCode">Program Code</option>
-        <option value="programTitle">Program Title</option>
-        <option value="programCollege">College</option>
+        <option value="programCode" {% if search_field == 'programCode' %}selected{% endif %}>Program Code</option>
+        <option value="programTitle" {% if search_field == 'programTitle' %}selected{% endif %}>Program Title</option>
+        <option value="programCollege" {% if search_field == 'programCollege' %}selected{% endif %}>College</option>
     </select>
     <label for="searchValue">Value:</label>
-    <input type="text" id="searchValue" name="searchValue" placeholder="Enter search value" required>
+    <input type="text" id="searchValue" name="searchValue" value="{{ search_value or '' }}" placeholder="Enter search value" required>
     <button type="submit">Search</button>
 </form>
 
@@ -56,30 +64,30 @@
     </div>
 </div>
 
-<!-- Program Table -->
-<table border="1" cellpadding="10">
-    <thead>
-        <tr>
-            <th>Course Code</th>
-            <th>Course Title</th>
-            <th>College</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% if search_result %}
-        <tr>
-            <td>{{ search_result['programCode'] }}</td>
-            <td>{{ search_result['programTitle'] }}</td>
-            <td>{{ search_result['programCollege'] }}</td>
-            <td>
-                <button onclick="toggleForm('{{ search_result['programCode'] }}', '{{ search_result['programTitle'] }}', '{{ search_result['programCollege'] }}')">Edit</button>
-                <form action="/delete_program/{{ search_result['programCode'] }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
-                    <button type="submit">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
+{% if no_results %}
+    <!-- No results message - replaces the table -->
+    <div style="text-align: center; padding: 50px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin: 20px 0;">
+        <div style="font-size: 48px; color: #856404; margin-bottom: 20px;">🔍</div>
+        <h3 style="color: #856404; margin-bottom: 10px;">No Programs Found</h3>
+        <p style="color: #856404; margin-bottom: 20px;">
+            No programs match your search criteria for "<strong>{{ search_value }}</strong>" in {{ search_field }}.
+        </p>
+        <a href="{{ url_for('program_bp.view_programs') }}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            ← Back to All Programs
+        </a>
+    </div>
+{% else %}
+    <!-- Program Table - only shown when there are results -->
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Title</th>
+                <th>College</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
             {% for program in programs %}
             <tr>
                 <td>{{ program['programCode'] }}</td>
@@ -93,9 +101,9 @@
                 </td>
             </tr>
             {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+{% endif %}
 
 <script>
     function toggleForm(programCode, programTitle, collegeCode) {
