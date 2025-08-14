@@ -82,15 +82,16 @@ class Students:
         for row in results:
             row_dict = dict(zip(column_names, row))
             students.append({
-                "IDNumber": row_dict['IDNumber'],
-                "firstName": row_dict['firstName'],
-                "lastName": row_dict['lastName'],
-                "Year": row_dict['Year'],
-                "Gender": row_dict['Gender'],
-                "Status": row_dict['Status'],
-                "imageURL": row_dict['imageURL'],
-                "CourseDetails": f"{row_dict['programCode']} ({row_dict['collegeName']})" if row_dict['programCode'] and row_dict['collegeName'] else row_dict['programCode']
-            })
+            "IDNumber": row_dict['IDNumber'],
+            "firstName": row_dict['firstName'],
+            "lastName": row_dict['lastName'],
+            "CourseCode": row_dict['programCode'],  # Add this line
+            "Year": row_dict['Year'],
+            "Gender": row_dict['Gender'],
+            "Status": row_dict['Status'],
+            "imageURL": row_dict['imageURL'],
+            "CourseDetails": f"{row_dict['programCode']} ({row_dict['collegeName']})" if row_dict['programCode'] and row_dict['collegeName'] else row_dict['programCode']
+        })
         
         return students
 

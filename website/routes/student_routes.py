@@ -173,8 +173,26 @@ def edit_student(idNumber):
                     flash("Only image files (JPG, PNG) are allowed.", "error")
                     return redirect(url_for('student_bp.edit_student', idNumber=idNumber))
 
+                # Check file size (2MB = 2 * 1024 * 1024 bytes)
+                MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB in bytes
+                
+                # Create a BytesIO object from the file
+                from io import BytesIO
+                file_content = file.read()
+                file_size = len(file_content)
+                
+                print(f"DEBUG: File size is {file_size} bytes ({file_size / (1024*1024):.2f} MB)")  # Debug line
+                
+                if file_size > MAX_FILE_SIZE:
+                    flash(f"File size ({file_size / (1024*1024):.2f} MB) exceeds the 2MB limit.", "error")
+                    return redirect(url_for('student_bp.view_students', idNumber=idNumber))
+                
+                # Create a new file-like object for Cloudinary upload
+                file_for_upload = BytesIO(file_content)
+                file_for_upload.name = file.filename  # Preserve filename
+
                 try:
-                    upload_result = cloudinary.uploader.upload(file)
+                    upload_result = cloudinary.uploader.upload(file_for_upload)
                     image_url = upload_result.get('secure_url')
                 except Exception as e:
                     flash(f"Error uploading image: {str(e)}", "error")

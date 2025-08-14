@@ -136,6 +136,7 @@
 <table border="1" cellpadding="10">
     <thead>
         <tr>
+            <th>Photo</th>
             <th>ID Number</th>
             <th>First Name</th>
             <th>Last Name</th>
@@ -143,13 +144,13 @@
             <th>Year</th>
             <th>Gender</th>
             <th>Status</th>
-            <th>Photo</th> <!-- New column for the photo -->
             <th>Action</th>
         </tr>
     </thead>
     <tbody>
         {% if search_result %}
         <tr>
+            <td><img src="{{ student['imageURL'] if student['imageURL'] else url_for('static', filename='images/default.png') }}" alt="Student Photo" width="50"></td>
             <td>{{ search_result.IDNumber }}</td>
             <td>{{ search_result.firstName }}</td>
             <td>{{ search_result.lastName }}</td>
@@ -157,7 +158,6 @@
             <td>{{ search_result.Year }}</td>
             <td>{{ search_result.Gender }}</td>
             <td>{{ search_result.Status }}</td>
-            <td><img src="{{ search_result.imageURL }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
             <td>
                 <button onclick="openEditForm('{{ search_result.IDNumber }}', '{{ search_result.firstName }}', '{{ search_result.lastName }}', '{{ search_result.CourseCode }}', '{{ search_result.Year }}', '{{ search_result.Gender }}')">Edit</button>
                 <form action="/delete_student/{{ search_result.IDNumber }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">
@@ -169,6 +169,7 @@
         <!-- Show all students when there's no search result -->
         {% for student in students %}
         <tr>
+            <td><img src="{{ student['imageURL'] if student['imageURL'] else url_for('static', filename='images/default.png') }}" alt="Student Photo" width="50"></td>
             <td>{{ student['IDNumber'] }}</td>
             <td>{{ student['firstName'] }}</td>
             <td>{{ student['lastName'] }}</td>
@@ -176,7 +177,6 @@
             <td>{{ student['Year'] }}</td>
             <td>{{ student['Gender'] }}</td>
             <td>{{ student['Status'] }}</td>
-            <td><img src="{{ student['imageURL'] }}" alt="Student Photo" width="50"></td> <!-- Display the photo -->
             <td>
                 <button onclick="openEditForm('{{ student['IDNumber'] }}', '{{ student['firstName'] }}', '{{ student['lastName'] }}', '{{ student['CourseCode'] }}', '{{ student['Year'] }}', '{{ student['Gender'] }}')">Edit</button>
                 <form action="/delete_student/{{ student['IDNumber'] }}" method="post" style="display:inline;" onsubmit="return confirmDelete();">

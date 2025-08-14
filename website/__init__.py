@@ -38,6 +38,7 @@ def create_app():
     app.config['MYSQL_PASSWORD'] = DB_PASSWORD
     app.config['MYSQL_DB'] = DB_NAME
 
+
     # Initialize MySQL with the app
     mysql.init_app(app)
 
